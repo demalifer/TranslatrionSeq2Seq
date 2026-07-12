@@ -3,25 +3,41 @@ import torch.nn as nn
 
 from config import *
 
-class ReviewAnalysisModel(nn.Module):
+class TranslateEncoder(nn.Module):
     def __init__(self, vocab_size, padding_idx=0):
-        super(ReviewAnalysisModel, self).__init__()
+        super(TranslateEncoder, self).__init__()
         self.embedding = nn.Embedding(vocab_size, embedding_dim=EMBEDDING_SIZE, padding_idx=padding_idx)
-        self.lstm = nn.LSTM(input_size=EMBEDDING_SIZE, hidden_size=HIDDEN_SIZE, batch_first=True)
-        self.linear = nn.Linear(in_features=HIDDEN_SIZE, out_features=1)
+        self.gru = nn.GRU(input_size=EMBEDDING_SIZE, hidden_size=HIDDEN_SIZE, batch_first=True)
 
     def forward(self, input):
         embed = self.embedding(input)
-        output, _ = self.lstm(embed)
+        output, _ = self.gru(embed)
         indices = torch.arange(output.shape[0])
         lengths = (input != self.embedding.padding_idx).sum(dim=1)
         features = output[indices, lengths - 1]
-        result = self.linear(features).squeeze(-1)
-        return result
+        return features
+
+class TranslateDecoder(nn.Module):
+    def __init__(self, vocab_size, padding_idx=0):
+        super(TranslateDecoder, self).__init__()
+        self.embedding = nn.Embedding(vocab_size, embedding_dim=EMBEDDING_SIZE, padding_idx=padding_idx)
+        self.gru = nn.GRU(input_size=EMBEDDING_SIZE, hidden_size=HIDDEN_SIZE, batch_first=True)
+        self.linear = nn.Linear(in_features=HIDDEN_SIZE, out_features=vocab_size)
+
+    def forward(self, input, h0=None):
+        embed = self.embedding(input)
+        output, hn = self.gru(embed, h0)
+        output = self.linear(output)
+        return output, hn
+
+class TranslateModel(nn.Module):
+    def __init__(self, cn_vocab_size, en_vocab_size, cn_padding_idx=0, en_padding_idx=0):
+        super(TranslateModel, self).__init__()
+        self.encoder = TranslateEncoder(cn_vocab_size, cn_padding_idx)
+        self.decoder = TranslateDecoder(en_vocab_size, en_padding_idx)
 
 if __name__ == '__main__':
     vocab_size = 1000
-    input = torch.randint(1000, size=(64, 5))
-    model = ReviewAnalysisModel(vocab_size)
-    output = model(input)
-    print(output.size())
+    model = TranslateModel(1000, 1024)
+    print(model.encoder)
+    print(model.decoder)
