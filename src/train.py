@@ -4,21 +4,27 @@ from tqdm import tqdm
 
 from config import *
 from dataset import get_dataloader
-from model import ReviewAnalysisModel
+from model import TranslateModel
 
 from torch.utils.tensorboard import SummaryWriter
 import time
-from tokenizer import JiebaTokenizer
+from tokenizer import ChineseTokenizer, EnglishTokenizer
 
 def train_one_epoch(model, train_loader, loss , optimizer, device):
     model.train()
 
     total_loss = 0
-    for input, target in tqdm(train_loader, desc='Training'):
+    for inputs, targets in tqdm(train_loader, desc='Training: '):
         optimizer.zero_grad()
-        input, target = input.to(device), target.to(device)
-        output = model(input)
-        loss_value = loss(output, target)
+        inputs, targets = inputs.to(device), targets.to(device)
+        context_vectors = model.encoder(inputs)
+
+        decoder_inputs = targets[:, :-1]
+        decoder_targets = targets[:, 1:]
+        decoder_h0 = context_vectors.unsqueeze(0)
+        decoder_outputs, _ = model.decoder(decoder_inputs, decoder_h0)
+
+        loss_value = loss(decoder_outputs.transpose(1, 2), decoder_targets)
         loss_value.backward()
         optimizer.step()
         optimizer.zero_grad()
@@ -30,10 +36,11 @@ def train():
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     train_loader = get_dataloader(train=True)
 
-    tokenizer = JiebaTokenizer.from_vocab(MODEL_DIR/VOCAB_FILE)
+    cn_tokenizer = ChineseTokenizer.from_vocab(MODEL_DIR/CN_VOCAB_FILE)
+    en_tokenizer = EnglishTokenizer.from_vocab(MODEL_DIR/EN_VOCAB_FILE)
 
-    model = ReviewAnalysisModel(vocab_size=tokenizer.vocab_size, padding_idx=tokenizer.pad_token_id).to(device)
-    loss = nn.BCEWithLogitsLoss()
+    model = TranslateModel(cn_tokenizer.vocab_size, en_tokenizer.vocab_size, cn_tokenizer.pad_token_id, en_tokenizer.pad_token_id).to(device)
+    loss = nn.CrossEntropyLoss(ignore_index=en_tokenizer.pad_token_id)
     optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
 
     writer = SummaryWriter(log_dir=LOG_DIR / time.strftime('%Y-%m-%d_%H-%M-%S'))

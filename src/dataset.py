@@ -14,7 +14,7 @@ class TranslateDataset(Dataset):
 
     def __getitem__(self, index):
         input = torch.tensor(self.data[index]['cn'], dtype=torch.long)
-        target = torch.tensor(self.data[index]['en'], dtype=torch.float)
+        target = torch.tensor(self.data[index]['en'], dtype=torch.long)
         return input, target
 
 def collate_fn(batch):

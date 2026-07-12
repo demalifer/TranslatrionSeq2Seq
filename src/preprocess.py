@@ -13,7 +13,7 @@ def preprocess():
 
     df = pd.read_csv(RAW_DATA_DIR/RAW_DATA_FILE, sep='\t', usecols=[0, 1], names=['en', 'cn'], encoding='utf-8').dropna()
 
-    train_df, test_df = train_test_split(df, test_size=0.2)
+    train_df, test_df = train_test_split(df, test_size=0.2, random_state=42)
 
     ChineseTokenizer.build_vocab(train_df['cn'].tolist(), MODEL_DIR/CN_VOCAB_FILE)
     EnglishTokenizer.build_vocab(train_df['en'].tolist(), MODEL_DIR/EN_VOCAB_FILE)
@@ -22,7 +22,7 @@ def preprocess():
     en_tokenizer = EnglishTokenizer.from_vocab(MODEL_DIR/EN_VOCAB_FILE)
 
     train_df['cn'] = train_df['cn'].apply(lambda x: cn_tokenizer.encode(x, mark=False))
-    train_df["en"] = train_df["en"].apply(lambda x: cn_tokenizer.encode(x, mark=True))
+    train_df["en"] = train_df["en"].apply(lambda x: en_tokenizer.encode(x, mark=True))
 
     test_df['cn'] = test_df['cn'].apply(lambda x: cn_tokenizer.encode(x, mark=False))
     test_df['en'] = test_df['en'].apply(lambda x: en_tokenizer.encode(x, mark=True))
