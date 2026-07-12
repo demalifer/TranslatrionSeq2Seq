@@ -76,4 +76,4 @@ if __name__ == '__main__':
     print('START_TOKEN: ', en_tokenizer.start_token)
     print('END_TOKEN: ', en_tokenizer.end_token)
     print(cn_tokenizer.encode('自然语言处理'))
-    print(en_tokenizer.encode('natural language processing', mark=True))
+    print(en_tokenizer.encode('natural language process', mark=True))
