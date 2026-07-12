@@ -1,10 +1,11 @@
 import pandas as pd
 import torch
 from torch.utils.data import Dataset, DataLoader
+from torch.nn.utils.rnn import pad_sequence
 
 from config import *
 
-class ReviewAnalysisDataset(Dataset):
+class TranslateDataset(Dataset):
     def __init__(self, path):
         self.data = pd.read_json(path, lines=True, orient='records').to_dict(orient='records')
 
@@ -12,14 +13,21 @@ class ReviewAnalysisDataset(Dataset):
         return len(self.data)
 
     def __getitem__(self, index):
-        input = torch.tensor(self.data[index]['review'], dtype=torch.long)
-        target = torch.tensor(self.data[index]['label'], dtype=torch.float)
+        input = torch.tensor(self.data[index]['cn'], dtype=torch.long)
+        target = torch.tensor(self.data[index]['en'], dtype=torch.float)
         return input, target
 
+def collate_fn(batch):
+    input_tensors = [item[0] for item in batch]
+    target_tensors = [item[1] for item in batch]
+    input_batch_tensor = pad_sequence(input_tensors, batch_first=True)
+    target_batch_tensor = pad_sequence(target_tensors, batch_first=True)
+    return input_batch_tensor, target_batch_tensor
+
 def get_dataloader(train=True):
-    path = PROCESSED_DATA_DIR / ('train.jsonl' if train else 'test.jsonl')
-    dataset = ReviewAnalysisDataset(path)
-    dataloader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=True)
+    path = PROCESSED_DATA_DIR / (TRAIN_DATA_FILE if train else TEST_DATA_FILE)
+    dataset = TranslateDataset(path)
+    dataloader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=True, collate_fn=collate_fn)
     return dataloader
 
 if __name__ == '__main__':
