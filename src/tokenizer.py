@@ -1,5 +1,6 @@
 import jieba
 from config import *
+from nltk import TreebankWordTokenizer, TreebankWordDetokenizer
 
 class BaseTokenizer():
     unk_token = UNK_TOKEN
@@ -55,9 +56,15 @@ class ChineseTokenizer(BaseTokenizer):
         return list(text)
     
 class EnglishTokenizer(BaseTokenizer):
+    tokenizer = TreebankWordTokenizer()
+    detokenizer = TreebankWordDetokenizer()
     @classmethod
     def tokenize(cls, text) -> list[str]:
-        pass
+        return cls.tokenizer.tokenize(text)
+
+    def decode(self, ids):
+        tokens = [self.id2word[id] for id in ids]
+        return self.detokenizer.detokenize(tokens)
 
 if __name__ == '__main__':
     en_tokenizer = EnglishTokenizer.from_vocab(MODEL_DIR / EN_VOCAB_FILE)
