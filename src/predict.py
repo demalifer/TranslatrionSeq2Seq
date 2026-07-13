@@ -53,7 +53,6 @@ def run_predict():
     print('model load success!')
 
     print('Welcome to INTELEGER CH->EN translate model! print q or quit to exit...')
-    input_history = ''
     while True:
         user_input = input('> please input a Chinese sentence: ')
         if user_input.strip() in ['q', 'quit']:
