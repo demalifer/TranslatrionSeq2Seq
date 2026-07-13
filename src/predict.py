@@ -1,13 +1,25 @@
 import torch
 
 from config import *
-from model import ReviewAnalysisModel
-from tokenizer import JiebaTokenizer
+from model import TranslateModel
+from tokenizer import EnglishTokenizer, ChineseTokenizer
 
-def predict_batch(model, inputs):
+def predict_batch(model, inputs, tokenizer, device):
     model.eval()
     with torch.no_grad():
-        output = model(inputs)
+        batch_size = inputs.shape[0]
+        context_vectors = model.encoder(inputs)
+
+        decoder_hidden_output = context_vectors.unsqueeze(0)
+        decoder_input = torch.full(size=(batch_size, 1), fill_value=tokenizer.start_token_id, device=device)
+
+        generated_ids = []
+        for i in range(SEQ_LEN):
+            decoder_output, decoder_hidden_output = model.decoder(decoder_input, decoder_hidden_output)
+            next_token_id = torch.argmax(decoder_output, dim=-1)
+            generated_ids.append(next_token_id)
+            decoder_input = next_token_id
+
     batch_results = torch.sigmoid(output)
     return batch_results.tolist()
 
