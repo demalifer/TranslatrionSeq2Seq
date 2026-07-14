@@ -17,12 +17,12 @@ def train_one_epoch(model, train_loader, loss , optimizer, device):
     for inputs, targets in tqdm(train_loader, desc='Training: '):
         optimizer.zero_grad()
         inputs, targets = inputs.to(device), targets.to(device)
-        context_vectors = model.encoder(inputs)
+        encoder_outputs, context_vectors = model.encoder(inputs)
 
         decoder_inputs = targets[:, :-1]
         decoder_targets = targets[:, 1:]
         decoder_h0 = context_vectors.unsqueeze(0)
-        decoder_outputs, _ = model.decoder(decoder_inputs, decoder_h0)
+        decoder_outputs, _ = model.decoder(decoder_inputs, decoder_h0, encoder_outputs)
 
         loss_value = loss(decoder_outputs.transpose(1, 2), decoder_targets)
         loss_value.backward()

@@ -8,7 +8,7 @@ def predict_batch(model, inputs, tokenizer, device):
     model.eval()
     with torch.no_grad():
         batch_size = inputs.shape[0]
-        context_vectors = model.encoder(inputs)
+        encoder_outputs, context_vectors = model.encoder(inputs)
 
         decoder_hidden_output = context_vectors.unsqueeze(0)
         decoder_input = torch.full(size=(batch_size, 1), fill_value=tokenizer.start_token_id, device=device)
@@ -16,7 +16,7 @@ def predict_batch(model, inputs, tokenizer, device):
         generated_ids = []
         is_finished = torch.full(size=[batch_size], fill_value=False, device=device)
         for i in range(SEQ_LEN):
-            decoder_output, decoder_hidden_output = model.decoder(decoder_input, decoder_hidden_output)
+            decoder_output, decoder_hidden_output = model.decoder(decoder_input, decoder_hidden_output, encoder_outputs)
             next_token_id = torch.argmax(decoder_output, dim=-1)
             generated_ids.append(next_token_id)
             decoder_input = next_token_id
